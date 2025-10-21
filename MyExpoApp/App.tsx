@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { Platform } from 'react-native';
 import { StatusBar } from "expo-status-bar";
 import {
   Text,
@@ -141,6 +142,35 @@ export default function App() {
   // Track whether the user is logged in
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // Lift files state to App so menu actions can add entries
+  const [files, setFiles] = useState(() => [
+    { id: 1, name: "note.md", date: "10/02/2025 10:20AM", type: "Note", typeColor: "green", number: "241" },
+    { id: 2, name: "resume.pdf", date: "10/02/2025 10:22AM", type: "Doc", typeColor: "orange", number: "242" },
+    { id: 3, name: "image.png", date: "10/02/2025 10:28AM", type: "Image", typeColor: "red", number: "243" },
+    { id: 4, name: "video.mp4", date: "10/02/2025 10:30AM", type: "Recording", typeColor: "blue", number: "244" },
+    { id: 5, name: "audio.mp3", date: "10/02/2025 10:32AM", type: "Recording", typeColor: "blue", number: "245" },
+    { id: 6, name: "file.docx", date: "10/02/2025 10:34AM", type: "Doc", typeColor: "orange", number: "246" },
+    { id: 7, name: "presentation.pptx", date: "10/02/2025 10:36AM", type: "Doc", typeColor: "orange", number: "247" },
+    { id: 8, name: "spreadsheet.xlsx", date: "10/02/2025 10:38AM", type: "Doc", typeColor: "orange", number: "248" },
+  ]);
+
+  const getTypeColor = (color: string) => {
+    switch (color) {
+      case "button-border-color":
+        return "#D7827E";
+      case "green":
+        return "bg-green-500";
+      case "orange":
+        return "bg-orange-500";
+      case "red":
+        return "bg-red-500";
+      case "blue":
+        return "bg-blue-500";
+      default:
+        return "bg-black";
+    }
+  };
+
   // Landing screen similar to the provided mockup
   const LandingScreen = () => {
     return (
@@ -263,7 +293,7 @@ export default function App() {
   };
 
   // The original main app content (renamed Home)
-  const Home = () => {
+  const Home = ({ files, setFiles, getTypeColor }: { files: any[], setFiles: any, getTypeColor: (s:string)=>string }) => {
     const [selectedFiles, setSelectedFiles] = useState<Set<number>>(new Set());
 
     const toggleFileSelection = (fileId: number) => {
@@ -278,33 +308,8 @@ export default function App() {
       });
     };
 
-    const files = [
-      { id: 1, name: "note.md", date: "10/02/2025 10:20AM", type: "Note", typeColor: "green", number: "241" },
-      { id: 2, name: "resume.pdf", date: "10/02/2025 10:22AM", type: "Doc", typeColor: "orange", number: "242" },
-      { id: 3, name: "image.png", date: "10/02/2025 10:28AM", type: "Image", typeColor: "red", number: "243" },
-      { id: 4, name: "video.mp4", date: "10/02/2025 10:30AM", type: "Recording", typeColor: "blue", number: "244" },
-      { id: 5, name: "audio.mp3", date: "10/02/2025 10:32AM", type: "Recording", typeColor: "blue", number: "245" },
-      { id: 6, name: "file.docx", date: "10/02/2025 10:34AM", type: "Doc", typeColor: "orange", number: "246" },
-      { id: 7, name: "presentation.pptx", date: "10/02/2025 10:36AM", type: "Doc", typeColor: "orange", number: "247" },
-      { id: 8, name: "spreadsheet.xlsx", date: "10/02/2025 10:38AM", type: "Doc", typeColor: "orange", number: "248" },
-    ];
 
-    const getTypeColor = (color: string) => {
-      switch (color) {
-        case "button-border-color":
-          return "#D7827E";
-        case "green":
-          return "bg-green-500";
-        case "orange":
-          return "bg-orange-500";
-        case "red":
-          return "bg-red-500";
-        case "blue":
-          return "bg-blue-500";
-        default:
-          return "bg-black";
-      }
-    };
+    // use getTypeColor passed from parent
 
     return (
       <SafeAreaView className="flex-1 bg-background">
@@ -461,7 +466,7 @@ export default function App() {
       ) : screen === "settings" ? (
         <Settings />
       ) : (
-        <Home />
+        <Home files={files} setFiles={setFiles} getTypeColor={getTypeColor} />
       )}
     </SafeAreaProvider>
   );
