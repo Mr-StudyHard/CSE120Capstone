@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import {
   Text,
@@ -9,9 +9,129 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
+import { Pressable } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 
 import "./global.css";
+
+// ExpandableMenu: central button expands to 4 radial options. On press-hold and drag,
+// the hovered option becomes highlighted; on release, the hovered option is selected.
+function ExpandableMenu() {
+  const [open, setOpen] = useState(false);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const containerRef = useRef(null);
+
+  // option definitions (icon name and callback)
+  const options = [
+    { id: 'file', icon: 'file' },
+    { id: 'attach', icon: 'paperclip' },
+    { id: 'mic', icon: 'microphone' },
+    { id: 'camera', icon: 'camera' },
+  ];
+
+  // compute which option index is under the point (x,y) relative to container center
+  function indexForPoint(x: number, y: number, rect: DOMRect | null) {
+    if (!rect) return null;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = x - cx;
+    const dy = y - cy;
+    const angle = (Math.atan2(dy, dx) * 180) / Math.PI; // -180..180
+    // map angle to 4 quadrants: right (0), top (1), left (2), bottom (3)
+    if (angle >= -45 && angle < 45) return 0; // right
+    if (angle >= 45 && angle < 135) return 3; // bottom (because y grows down)
+    if (angle >= 135 || angle < -135) return 2; // left
+    return 1; // top
+  }
+
+  useEffect(() => {
+    // prevent scrolling while menu is open on web
+    function prevent(e: TouchEvent) {
+      if (open) e.preventDefault();
+    }
+    document.addEventListener('touchmove', prevent, { passive: false });
+    return () => document.removeEventListener('touchmove', prevent);
+  }, [open]);
+
+  // handle pointer events at document level while open
+  useEffect(() => {
+    if (!open) return;
+    const onPointerMove = (e: PointerEvent) => {
+      const rect = (containerRef.current as any)?.getBoundingClientRect?.();
+      const idx = indexForPoint(e.clientX, e.clientY, rect);
+      setHoverIndex(idx);
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      const rect = (containerRef.current as any)?.getBoundingClientRect?.();
+      const idx = indexForPoint(e.clientX, e.clientY, rect);
+      setOpen(false);
+      setHoverIndex(null);
+      if (idx != null) {
+        // perform action for selected option
+        // For now, we just show an alert
+        // In future, you can call a prop callback
+        // Map idx to option
+        const opt = options[idx];
+        // eslint-disable-next-line no-alert
+        alert(`Selected: ${opt.id}`);
+      }
+      document.removeEventListener('pointermove', onPointerMove as any);
+      document.removeEventListener('pointerup', onPointerUp as any);
+    };
+    document.addEventListener('pointermove', onPointerMove as any);
+    document.addEventListener('pointerup', onPointerUp as any);
+    return () => {
+      document.removeEventListener('pointermove', onPointerMove as any);
+      document.removeEventListener('pointerup', onPointerUp as any);
+    };
+  }, [open]);
+
+  return (
+    <View ref={containerRef as any} className="relative items-center">
+      {/* radial options */}
+      {open && (
+        <View className="absolute bottom-20 w-full items-center justify-center pointer-events-none">
+          <View className="relative w-64 h-64 items-center justify-center">
+            {options.map((opt, i) => {
+              // positions for 4 items (right, top, left, bottom)
+              const positions = [ {right: -80, top: 64}, {right: 64, top: -80}, {right: 208, top: 64}, {right: 64, top: 208} ];
+              const pos = positions[i];
+              const isHover = hoverIndex === i;
+              return (
+                <View key={opt.id} style={{ position: 'absolute', right: pos.right, top: pos.top }} pointerEvents="none">
+                  <View className={`w-14 h-14 rounded-full items-center justify-center ${isHover? 'bg-button-outline' : 'bg-card-bg'}`}>
+                    <FontAwesome name={opt.icon as any} size={20} color={isHover? 'black' : 'white'} />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
+      {/* central button */}
+      <View className="w-full items-center">
+        <View className="w-16 h-16 rounded-full bg-button-outline items-center justify-center">
+          <Pressable
+            onPressIn={(e) => {
+              setOpen(true);
+              const evt = (e as any).nativeEvent;
+              const rect = (containerRef.current as any)?.getBoundingClientRect?.();
+              const idx = indexForPoint(evt.pageX, evt.pageY, rect);
+              setHoverIndex(idx);
+            }}
+            onPressOut={() => {
+              // handled at document pointerup
+            }}
+            style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <FontAwesome name="plus" size={28} color="black" />
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
 
 export default function App() {
   const [screen, setScreen] = useState<
@@ -273,20 +393,11 @@ export default function App() {
           ))}
         </ScrollView>
 
-        {/* Bottom Navigation */}
-        <View className=" px-6 py-4 flex-row justify-around mb-4">
-          <TouchableOpacity className="w-14 h-14 border-2 bg-button-outline border-button-outline rounded-full items-center justify-center">
-                <FontAwesome name="file" size={20} color="black" />
-          </TouchableOpacity>
-          <TouchableOpacity className="w-14 h-14 border-2 bg-button-outline border-button-outline rounded-full items-center justify-center">
-            <FontAwesome name="paperclip" size={20} color="black" />
-          </TouchableOpacity>
-          <TouchableOpacity className="w-14 h-14 border-2 bg-button-outline border-button-outline rounded-full items-center justify-center">
-            <FontAwesome name="microphone" size={20} color="black" />
-          </TouchableOpacity>
-          <TouchableOpacity className="w-14 h-14 border-2 bg-button-outline border-button-outline rounded-full items-center justify-center">
-            <FontAwesome name="camera" size={20} color="black" />
-          </TouchableOpacity>
+        {/* Bottom Navigation: central expandable button */}
+        <View style={{ paddingHorizontal: 24, paddingBottom: 12 }}>
+          {/* Overlay that appears while expanding to capture moves */}
+          {/** overlay covers bottom area when expanding */}
+          <ExpandableMenu />
         </View>
       </SafeAreaView>
     );
