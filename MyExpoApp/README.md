@@ -77,3 +77,28 @@ A React Native file management app built with Expo and NativeWind (Tailwind CSS 
 ---
 
 _Built with ❤️ using Expo for maximum developer experience_
+
+## Web build & run
+
+Development web:
+
+```powershell
+cd MyExpoApp
+npm.cmd install
+npm.cmd run web
+# Open http://localhost:8081 (or the alternate port printed by Expo)
+```
+
+Production/export:
+
+```powershell
+# If your local Expo CLI supports it:
+npx expo export:web .
+# Or install the global Expo CLI and run:
+npm install -g expo-cli
+expo export:web .
+
+# This will produce a `web-build` (or `web`) directory with static assets you can host.
+```
+
+If `expo export:web` complains about bundler type, ensure your project supports Webpack or use a CI runner with full Expo web support.
