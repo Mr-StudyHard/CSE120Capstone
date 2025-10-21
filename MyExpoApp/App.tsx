@@ -12,15 +12,12 @@ import {
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { Pressable } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
-import { Audio } from 'expo-av';
 
 import "./global.css";
 
 // ExpandableMenu: central button expands to 4 radial options. On press-hold and drag,
 // the hovered option becomes highlighted; on release, the hovered option is selected.
-function ExpandableMenu({ performAction }: { performAction?: (id: string) => void }) {
+function ExpandableMenu() {
   const [open, setOpen] = useState(false);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const containerRef = useRef(null);
@@ -58,7 +55,7 @@ function ExpandableMenu({ performAction }: { performAction?: (id: string) => voi
   }, [open]);
 
   // handle pointer events at document level while open
-      useEffect(() => {
+  useEffect(() => {
     if (!open) return;
     const onPointerMove = (e: PointerEvent) => {
       const rect = (containerRef.current as any)?.getBoundingClientRect?.();
@@ -71,9 +68,13 @@ function ExpandableMenu({ performAction }: { performAction?: (id: string) => voi
       setOpen(false);
       setHoverIndex(null);
       if (idx != null) {
-        // call provided callback if available
+        // perform action for selected option
+        // For now, we just show an alert
+        // In future, you can call a prop callback
+        // Map idx to option
         const opt = options[idx];
-        if (performAction) performAction(opt.id);
+        // eslint-disable-next-line no-alert
+        alert(`Selected: ${opt.id}`);
       }
       document.removeEventListener('pointermove', onPointerMove as any);
       document.removeEventListener('pointerup', onPointerUp as any);
@@ -167,75 +168,6 @@ export default function App() {
         return "bg-blue-500";
       default:
         return "bg-black";
-    }
-  };
-
-  // Action handlers for the expandable menu
-  const performAction = async (id: string) => {
-    try {
-      if (id === 'file') {
-        // Document picker
-        const res = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: false }) as any;
-        const name = res?.name || (res?.uri ? res.uri.split('/').pop() : undefined) || 'document';
-        if (res && (res.name || res.uri)) {
-          const newItem = { id: Date.now(), name: String(name), date: new Date().toLocaleString(), type: 'Doc', typeColor: 'orange', number: String(Math.floor(Math.random()*900+100)) };
-          setFiles((s) => [newItem, ...s]);
-        }
-      } else if (id === 'attach') {
-        // prompt for a URL using window.prompt on web, or Alert.prompt isn't cross-platform; use prompt fallback
-        let url = undefined as string | null | undefined;
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          // eslint-disable-next-line no-alert
-          url = window.prompt('Enter URL to attach');
-        } else {
-          // simple fallback: create a placeholder
-          url = 'https://example.com';
-        }
-        if (url) {
-          const newItem = { id: Date.now(), name: url, date: new Date().toLocaleString(), type: 'Link', typeColor: 'button-border-color', number: String(Math.floor(Math.random()*900+100)) };
-          setFiles((s) => [newItem, ...s]);
-        }
-      } else if (id === 'mic') {
-        // record audio for up to 5s (demo)
-        const permission = await Audio.requestPermissionsAsync?.();
-        if (permission && permission.granted === false) {
-          Alert.alert('Permission required', 'Audio permission is required to record');
-          return;
-        }
-        const recording = new Audio.Recording();
-        // prepare with default options
-  // allow any options for cross-SDK compatibility
-  // @ts-ignore
-  await recording.prepareToRecordAsync?.(undefined as any);
-        await recording.startAsync();
-        // stop after 5 seconds automatically for demo
-        setTimeout(async () => {
-          try {
-            await recording.stopAndUnloadAsync();
-            const uri = (recording as any).getURI?.();
-            const newItem = { id: Date.now(), name: uri ? uri.split('/').pop() : 'audio.mp3', date: new Date().toLocaleString(), type: 'Recording', typeColor: 'blue', number: String(Math.floor(Math.random()*900+100)) };
-            setFiles((s) => [newItem, ...s]);
-          } catch (e) {
-            // ignore
-          }
-        }, 5000);
-      } else if (id === 'camera') {
-        // request permission and launch camera (image picker)
-        const perm = await ImagePicker.requestCameraPermissionsAsync?.();
-        if (perm?.granted === false) {
-          Alert.alert('Permission required', 'Camera permission is required to capture a photo');
-          return;
-        }
-        const photo = await ImagePicker.launchCameraAsync({ quality: 0.7, base64: false }) as any;
-        const uri = photo?.uri || photo?.assets?.[0]?.uri;
-        if (uri) {
-          const newItem = { id: Date.now(), name: String(uri.split('/').pop() || 'photo.jpg'), date: new Date().toLocaleString(), type: 'Image', typeColor: 'red', number: String(Math.floor(Math.random()*900+100)) };
-          setFiles((s) => [newItem, ...s]);
-        }
-      }
-    } catch (err) {
-      console.error('performAction error', err);
-      Alert.alert('Error', 'Action failed');
     }
   };
 
