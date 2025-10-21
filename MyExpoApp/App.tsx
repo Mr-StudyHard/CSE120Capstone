@@ -8,16 +8,8 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faGear } from "@fortawesome/free-solid-svg-icons";
-import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
-import { faLink } from "@fortawesome/free-solid-svg-icons";
-import { faCheck } from "@fortawesome/free-solid-svg-icons";
-import { faFileLines } from "@fortawesome/free-solid-svg-icons";
-import { faPaperclip } from "@fortawesome/free-solid-svg-icons";
-import { faMicrophone } from "@fortawesome/free-solid-svg-icons";
-import { faCamera } from "@fortawesome/free-solid-svg-icons";
+import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
+import { FontAwesome } from '@expo/vector-icons';
 
 import "./global.css";
 
@@ -72,10 +64,10 @@ export default function App() {
     const onSubmit = () => {
       // Validate username 'Admin' and password 'Admin' (case-sensitive)
       if (username === "Admin" && password === "Admin") {
+        // Ensure navigation happens on web (Alert callbacks may not fire there)
         setIsLoggedIn(true);
-        Alert.alert("Success", "Logged in successfully", [
-          { text: "OK", onPress: () => setScreen("home") },
-        ]);
+        setScreen("home");
+        Alert.alert("Success", "Logged in successfully");
       } else {
         Alert.alert("Error", "Invalid username or password");
       }
@@ -203,15 +195,15 @@ export default function App() {
           {/* Email and Settings */}
           <View className="flex-row justify-between items-center mt-12 mb-2">
             <Text className="text-white text-base">dsanchez113@ucmerced.edu</Text>
-            <TouchableOpacity onPress={() => setScreen("settings") }>
-              <FontAwesomeIcon icon={faGear} size={20} color="white" />
+              <TouchableOpacity onPress={() => setScreen("settings") }>
+              <FontAwesome name="cog" size={20} color="white" />
             </TouchableOpacity>
           </View>
 
           {/* Search Bar and Bundle Button */}
           <View className="flex-row items-center space-x-3">
             <View className="flex-1 bg-white rounded-lg px-4 py-3 flex-row items-center">
-              <FontAwesomeIcon icon={faMagnifyingGlass} size={20} color="black" />
+              <FontAwesome name="search" size={20} color="black" />
               <TextInput
                 placeholder="Search"
                 placeholderTextColor="#9CA3AF"
@@ -219,8 +211,8 @@ export default function App() {
               />
             </View>
             <TouchableOpacity className="border-2 border-button-outline bg-black px-4 py-3 rounded-lg flex-row items-center">
-              <FontAwesomeIcon
-                icon={faLink}
+              <FontAwesome
+                name="link"
                 size={20}
                 color={getTypeColor("button-border-color")}
               />
@@ -248,7 +240,7 @@ export default function App() {
                 onPress={() => toggleFileSelection(file.id)}
               >
                 {selectedFiles.has(file.id) && (
-                  <FontAwesomeIcon icon={faCheck} size={15} color="black" />
+                  <FontAwesome name="check" size={15} color="black" />
                 )}
               </TouchableOpacity>
 
@@ -284,16 +276,16 @@ export default function App() {
         {/* Bottom Navigation */}
         <View className=" px-6 py-4 flex-row justify-around mb-4">
           <TouchableOpacity className="w-14 h-14 border-2 bg-button-outline border-button-outline rounded-full items-center justify-center">
-            <FontAwesomeIcon icon={faFileLines} size={20} color="black" />
+                <FontAwesome name="file" size={20} color="black" />
           </TouchableOpacity>
           <TouchableOpacity className="w-14 h-14 border-2 bg-button-outline border-button-outline rounded-full items-center justify-center">
-            <FontAwesomeIcon icon={faPaperclip} size={20} color="black" />
+            <FontAwesome name="paperclip" size={20} color="black" />
           </TouchableOpacity>
           <TouchableOpacity className="w-14 h-14 border-2 bg-button-outline border-button-outline rounded-full items-center justify-center">
-            <FontAwesomeIcon icon={faMicrophone} size={20} color="black" />
+            <FontAwesome name="microphone" size={20} color="black" />
           </TouchableOpacity>
           <TouchableOpacity className="w-14 h-14 border-2 bg-button-outline border-button-outline rounded-full items-center justify-center">
-            <FontAwesomeIcon icon={faCamera} size={20} color="black" />
+            <FontAwesome name="camera" size={20} color="black" />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -346,10 +338,20 @@ export default function App() {
     );
   };
 
-  // Render the correct screen
-  if (screen === "landing") return <LandingScreen />;
-  if (screen === "login") return <LoginScreen />;
-  if (screen === "signup") return <SignUpScreen />;
-  if (screen === "settings") return <Settings />;
-  return <Home />;
+  // Render the correct screen wrapped with SafeAreaProvider for web
+  return (
+    <SafeAreaProvider>
+      {screen === "landing" ? (
+        <LandingScreen />
+      ) : screen === "login" ? (
+        <LoginScreen />
+      ) : screen === "signup" ? (
+        <SignUpScreen />
+      ) : screen === "settings" ? (
+        <Settings />
+      ) : (
+        <Home />
+      )}
+    </SafeAreaProvider>
+  );
 }
